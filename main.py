@@ -715,7 +715,7 @@ async def get_data(request: CalculationRequest):
     try:
         print("request.company=", request.company)
         json_file = os.path.join(
-            "plans/Manulife/",
+            "plan2/Manulife/",
             # request.company,
             f"{request.planFileName}.json"
         )
