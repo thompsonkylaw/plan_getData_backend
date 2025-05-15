@@ -361,12 +361,12 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
                 api_key = GROK2_API_KEY
                 base_url="https://api.x.ai/v1"
                 model = "grok-3-beta"
-                log_message(f"大模型=X", queue, loop)
+                log_message(f"AI模型=X", queue, loop)
             else: 
                 api_key = DEEPSEEK_API_KEY   
                 base_url="https://api.deepseek.com"
                 model = "deepseek-chat"
-                log_message(f"大模型=C", queue, loop)
+                log_message(f"AI模型C使用中", queue, loop)
             
             client = OpenAI(api_key=api_key, base_url=base_url)
             response = client.chat.completions.create(
@@ -406,7 +406,7 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
             elapsed_time = end_time - start_time
             minutes, seconds = divmod(elapsed_time, 60)
             timer_value = f"{int(minutes):02d}:{int(seconds):02d}"
-            log_message(f"所需時間 = {timer_value}", queue, loop)
+            log_message(f"v1.0 所需時間 = {timer_value}", queue, loop)
 
             return {
                 "status": "success",
