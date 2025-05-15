@@ -713,12 +713,13 @@ class OutputData(BaseModel):
 @app.post("/getData", response_model=List[OutputData])
 async def get_data(request: CalculationRequest):
     try:
+        print("request.company=", request.company)
         json_file = os.path.join(
             "plans/Manulife/",
             # request.company,
             f"{request.planFileName}.json"
         )
-        print("request.company=", request.company)
+        
         print("request.planFileName=", request.planFileName)
         print("request.planOption=", request.planOption)
         with open(json_file, 'r', encoding='utf-8') as f:
