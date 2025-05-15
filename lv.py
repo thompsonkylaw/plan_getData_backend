@@ -467,9 +467,11 @@ def fill_LV_form(driver, form_data, calculation_data, log_func, TIMEOUT=120):
             input_field = WebDriverWait(driver, 20).until(
                 EC.visibility_of_element_located((By.XPATH, xpath))
             )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", input_field)
             input_field.clear()
             input_field.send_keys(str(int(premium)))
             inputed_id = input_field.get_attribute("id")
             log_func(f"已填 {str(int(start_year_str)+idx)}/{str(int(search_age_str)+idx)}({premium}) in field index = {input_index} and inputed_id = {inputed_id}")
             time.sleep(0.2)
-        
+            
+        time.sleep(1)

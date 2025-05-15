@@ -1,3 +1,4 @@
+#//b4 init session
 import requests
 import io
 import pdfplumber
@@ -31,6 +32,7 @@ import re
 from gs import fill_GS_form
 from lv import fill_LV_form
 
+
 load_dotenv()
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 GROK2_API_KEY = os.getenv("GROK2_API_KEY")
@@ -42,7 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Environment flag
-IsProduction = True    #Use web drivr
+IsProduction = True    # Set to True in production on Railway.app
 
 UseGrok = False
 
@@ -60,7 +62,6 @@ app.add_middleware(
 
 # Define Pydantic models
 class LoginRequest(BaseModel):
-    session_id: str
     url: str
     username: str
     password: str
@@ -286,6 +287,79 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
             
             log_message("列印中, 請稍後..." , queue, loop)
             
+            # pdf_request_id = None
+            # pdf_content = None
+            # start_time = time.time()
+
+            # while time.time() - start_time < 60:
+            #     logs = driver.get_log('performance')
+            #     for log in logs:
+            #         message = json.loads(log['message'])['message']
+            #         if message['method'] == 'Network.responseReceived':
+            #             response = message['params']['response']
+            #             if response['mimeType'] == 'application/pdf':
+            #                 pdf_request_id = message['params']['requestId']
+            #         elif message['method'] == 'Network.loadingFinished' and pdf_request_id is not None:
+            #             if message['params']['requestId'] == pdf_request_id:
+            #                 body = driver.execute_cdp_cmd('Network.getResponseBody', {'requestId': pdf_request_id})
+            #                 if body['base64Encoded']:
+            #                     pdf_content = base64.b64decode(body['body'])
+            #                 else:
+            #                     pdf_content = body['body'].encode()
+            #                 break
+            #     if pdf_content:
+            #         break
+            #     time.sleep(5)
+
+            # if pdf_content is None:
+            #     # raise TimeoutException("PDF response not found within timeout")
+            #     log_message("raise TimeoutException", queue, loop)
+            #     start_time = time.time()
+            #     while time.time() - start_time < 60:  # Wait up to 60 seconds
+            #         logs = driver.get_log('performance')
+            #         for log in logs:
+            #             message = json.loads(log['message'])['message']
+            #             if message['method'] == 'Network.responseReceived':
+            #                 response = message['params']['response']
+            #                 if response['mimeType'] == 'application/pdf':
+            #                     request_id = message['params']['requestId']
+            #                     body = driver.execute_cdp_cmd('Network.getResponseBody', {'requestId': request_id})
+            #                     if body['base64Encoded']:
+            #                         pdf_content = base64.b64decode(body['body'])
+            #                     else:
+            #                         pdf_content = body['body'].encode()
+            #                     break
+            #         if pdf_content:
+            #             break
+            #         time.sleep(1)
+            #     else:
+            #         raise TimeoutException("PDF response not found within timeout")
+            #**************************************************************************************
+            # time.sleep(20)
+            
+            # # Capture PDF content from network response
+            # pdf_content = None
+            # start_time = time.time()
+            # while time.time() - start_time < 60:  # Wait up to 60 seconds
+            #     logs = driver.get_log('performance')
+            #     for log in logs:
+            #         message = json.loads(log['message'])['message']
+            #         if message['method'] == 'Network.responseReceived':
+            #             response = message['params']['response']
+            #             if response['mimeType'] == 'application/pdf':
+            #                 request_id = message['params']['requestId']
+            #                 body = driver.execute_cdp_cmd('Network.getResponseBody', {'requestId': request_id})
+            #                 if body['base64Encoded']:
+            #                     pdf_content = base64.b64decode(body['body'])
+            #                 else:
+            #                     pdf_content = body['body'].encode()
+            #                 break
+            #     if pdf_content:
+            #         break
+            #     time.sleep(1)
+            # else:
+            #     raise TimeoutException("PDF response not found within timeout")
+            #**************************************************************************************
             # Wait for PDF response
             pdf_request_id = None
             pdf_content = None
@@ -317,7 +391,7 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
 
             if pdf_content is None:
                 raise TimeoutException("PDF response not found within timeout")
-            
+            #**************************************************************************************
             log_message("PDF檔案從計劃書系統獲取中", queue, loop)
 
             pdf_file = io.BytesIO(pdf_content)
@@ -336,6 +410,7 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
             age_1_cash_value = 0
             age_2_cash_value = 0
             annual_premium = 0
+            
             
             log_message(f"基本儲蓄計劃是={basicPlan_}", queue, loop)
             
@@ -361,6 +436,9 @@ def perform_checkout(driver, notional_amount: str, form_data: Dict, queue: async
                 api_key = GROK2_API_KEY
                 base_url="https://api.x.ai/v1"
                 model = "grok-3-beta"
+                # model = "grok-3-mini-latest" 
+                # model = "grok-3-mini-fast-latest" 
+                
                 log_message(f"大模型=X", queue, loop)
             else: 
                 api_key = DEEPSEEK_API_KEY   
@@ -542,10 +620,8 @@ def verify_otp_worker(session_id: str, otp: str, calculation_data: Dict, form_da
             fill_GS_form(driver, form_data, calculation_data, log_func, TIMEOUT)
         elif 'LV' in basicPlan_:
             fill_LV_form(driver, form_data, calculation_data, log_func, TIMEOUT)     
-        
-        log_message(f"已完成填寫 {basicPlan_}", queue, loop)
+
         result = perform_checkout(driver, form_data['notionalAmount'], form_data, queue, loop, calculation_data, cash_value_info, session_id)
-        
         if result["status"] == "success":
             driver.quit()
             sessions.pop(session_id, None)
@@ -614,19 +690,11 @@ def get_medical_premium(processed_data, start_year_number):
         return None
 
 # FastAPI endpoints
-@app.post("/init-session")
-async def init_session():
+@app.post("/login")
+async def initiate_login(request: LoginRequest):
     session_id = str(uuid.uuid4())
     queue = asyncio.Queue()
     session_queues[session_id] = queue
-    return {"session_id": session_id}
-
-@app.post("/login")
-async def initiate_login(request: LoginRequest):
-    session_id = request.session_id
-    if session_id not in session_queues:
-        raise HTTPException(status_code=404, detail="Session not found")
-    queue = session_queues[session_id]
     loop = asyncio.get_running_loop()
     try:
         await run_in_thread(
@@ -640,6 +708,7 @@ async def initiate_login(request: LoginRequest):
         )
         return {"session_id": session_id}
     except Exception as e:
+        session_queues.pop(session_id, None)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/verify-otp")
