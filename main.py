@@ -33,8 +33,10 @@ class OutputData(BaseModel):
 async def get_data(request: CalculationRequest):
     try:
         # Construct the path to the JSON file
+        print("request.company=", request.company)
         json_file = os.path.join(
-            "plan2/Manulife/",
+            "plan2/",
+            f"{request.company}/",
             f"{request.planFileName}.json"
         )
         
